@@ -181,6 +181,7 @@ function App() {
                   return (
                     <div
                       key={markerId}
+                      className='flex items-center justify-center'
                       onClick={() => {
                         setEditingMarkerId(marker.id);
                       }}
@@ -192,33 +193,46 @@ function App() {
                         width: marker.width,
                         height: marker.height,
                         border: `2px solid rgb(${marker.color.r}, ${marker.color.g}, ${marker.color.b})`,
-                        backgroundColor: `rgba(${marker.color.r}, ${marker.color.g}, ${marker.color.b}, 0.2)`,
+                        backgroundColor: `rgba(${marker.color.r}, ${marker.color.g}, ${marker.color.b}, 0.35)`,
+                        zIndex: markerId === editingMarkerId ? 100 : 'auto',
                       }}
                     >
                       {markerId === editingMarkerId ? (
                         <input
+                          className='bg-transparent text-sm border-none text-white w-full text-center outline-none px-1 py-0.5'
                           type='text'
                           autoFocus
                           value={markers[markerId].name}
-                          onChange={(event) =>
-                            handleNameChange(event, markerId)
-                          }
+                          onChange={(event) => {
+                            handleNameChange(event, markerId);
+                          }}
                           onBlur={() => setEditingMarkerId('')}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              setEditingMarkerId('');
+                            }
+                          }}
                         />
-                      ) : (
+                      ) : marker.name !== '' ? (
                         <div
+                          className='text-sm font-medium px-1 pt-1 break-words'
                           style={{
                             position: 'absolute',
-                            top: '-1.5em',
+                            top: '-2px',
                             width: '100%',
-                            textAlign: 'center',
-                            fontWeight: 'bold',
+                            textAlign: 'left',
                             color: 'white',
-                            textShadow: '1px 1px 2px black',
+                            border: `2px solid rgb(${marker.color.r}, ${marker.color.g}, ${marker.color.b})`,
+                            backgroundColor: `rgb(${marker.color.r}, ${marker.color.g}, ${marker.color.b})`,
+                            opacity: 1,
                           }}
                         >
                           {marker.name}
                         </div>
+                      ) : (
+                        <p className='text-center text-xs text-white'>
+                          Click to add a name
+                        </p>
                       )}
                     </div>
                   );
