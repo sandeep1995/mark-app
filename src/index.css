@@ -6,4 +6,8 @@
   html {
     font-family: 'DM Sans', sans-serif;
   }
+  img {
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
