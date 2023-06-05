@@ -1,36 +1,72 @@
 import { MouseEvent, useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
+interface Color {
+  r: number;
+  g: number;
+  b: number;
+}
+
 interface Marker {
-  name?: string;
+  id: string;
   startX: number;
   startY: number;
   width: number;
   height: number;
+  color: Color;
+  name?: string;
 }
 
 interface MarkersMap {
   [key: string]: Marker;
 }
 
+function getRandomRgb() {
+  const num = Math.round(0xffffff * Math.random());
+  const r = num >> 16;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return {
+    r,
+    g,
+    b,
+  };
+}
+
 function App() {
   const [markers, setMarkers] = useState<MarkersMap>({});
   const [startX, setStartX] = useState<number>(0);
   const [startY, setStartY] = useState<number>(0);
-  const [drawing, setDrawing] = useState<string>('');
+  const [markerId, setDrawingMarkerId] = useState<string>('');
+  const [editingMarkerId, setEditingMarkerId] = useState<string>('');
+  const [isDrawing, setIsDrawing] = useState<boolean>(false);
+
+  const [color, setColor] = useState<Color>({
+    r: 0,
+    g: 0,
+    b: 0,
+  });
+
   const markerRef = useRef(null);
 
-  const handleMouseDown = (event: MouseEvent) => {
-    const { offsetX, offsetY } = event.nativeEvent;
-    setStartX(offsetX);
-    setStartY(offsetY);
+  const addStartMarking = () => {
+    setIsDrawing(true);
+  };
 
-    const id = uuidv4();
-    setDrawing(id);
+  const handleMouseDown = (event: MouseEvent) => {
+    if (isDrawing && !markerId && !markerRef.current) {
+      const { offsetX, offsetY } = event.nativeEvent;
+      setStartX(offsetX);
+      setStartY(offsetY);
+      const id = uuidv4();
+      const color = getRandomRgb();
+      setColor(color);
+      setDrawingMarkerId(id);
+    }
   };
 
   const handleMouseMove = (event: MouseEvent) => {
-    if (drawing) {
+    if (markerId && isDrawing) {
       const { offsetX, offsetY } = event.nativeEvent;
       const width = offsetX - startX;
       const height = offsetY - startY;
@@ -41,12 +77,15 @@ function App() {
 
       markerRef.current = requestAnimationFrame(() => {
         const newMarker = {
-          id: drawing,
-          startX,
-          startY,
-          width,
-          height,
+          id: markerId,
+          startX: width >= 0 ? startX : offsetX,
+          startY: height >= 0 ? startY : offsetY,
+          width: Math.abs(width),
+          height: Math.abs(height),
+          color,
+          name: '',
         };
+
         setMarkers((prevMarkers) => ({
           ...prevMarkers,
           [newMarker.id]: newMarker,
@@ -56,11 +95,53 @@ function App() {
   };
 
   const handleMouseUp = (event: MouseEvent) => {
-    setDrawing('');
-    if (markerRef.current) {
+    if (markerRef.current && markerId && isDrawing) {
+      const { offsetX, offsetY } = event.nativeEvent;
+      const width = offsetX - startX;
+      const height = offsetY - startY;
+
+      const newMarker = {
+        name: '',
+        id: markerId,
+        startX: width >= 0 ? startX : offsetX,
+        startY: height >= 0 ? startY : offsetY,
+        width: Math.abs(width),
+        height: Math.abs(height),
+        color,
+      };
+
+      setMarkers((prevMarkers) => ({
+        ...prevMarkers,
+        [newMarker.id]: newMarker,
+      }));
+
       cancelAnimationFrame(markerRef.current);
       markerRef.current = null;
+      setDrawingMarkerId('');
+      setStartX(0);
+      setStartY(0);
+      setColor({
+        r: 0,
+        g: 0,
+        b: 0,
+      });
+      setIsDrawing(false);
     }
+  };
+
+  const handleNameChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    markerId: string
+  ) => {
+    const { value } = event.target;
+
+    setMarkers((prevMarkers) => ({
+      ...prevMarkers,
+      [markerId]: {
+        ...prevMarkers[markerId],
+        name: value,
+      },
+    }));
   };
 
   return (
@@ -79,11 +160,11 @@ function App() {
           <div className='sm:col-span-4 bg-white'>
             <div className='flex items-center justify-center'>
               <div
-                ref={markerRef}
+                className={`mt-4 z-50 ${isDrawing ? 'cursor-crosshair' : ''}`}
                 style={{
                   position: 'relative',
-                  width: '500px',
-                  height: '500px',
+                  width: '800px',
+                  height: '600px',
                   border: '1px solid black',
                 }}
                 onMouseDown={handleMouseDown}
@@ -91,8 +172,8 @@ function App() {
                 onMouseUp={handleMouseUp}
               >
                 <img
-                  className='object-contain w-full h-full pointer-events-none'
-                  src='https://picsum.photos/500/500'
+                  className='object-contain w-full -z-10 h-full pointer-events-none'
+                  src='https://picsum.photos/800/600'
                   style={{ width: '100%', height: '100%' }}
                 />
                 {Object.keys(markers).map((markerId) => {
@@ -100,19 +181,57 @@ function App() {
                   return (
                     <div
                       key={markerId}
+                      onClick={() => {
+                        setEditingMarkerId(marker.id);
+                      }}
                       style={{
+                        pointerEvents: isDrawing ? 'none' : 'auto',
                         position: 'absolute',
                         left: marker.startX,
                         top: marker.startY,
                         width: marker.width,
                         height: marker.height,
-                        border: '1px solid rgb(225, 89, 175)',
-                        backgroundColor: 'rgba(225, 89, 175, 0.2)',
+                        border: `2px solid rgb(${marker.color.r}, ${marker.color.g}, ${marker.color.b})`,
+                        backgroundColor: `rgba(${marker.color.r}, ${marker.color.g}, ${marker.color.b}, 0.2)`,
                       }}
-                    />
+                    >
+                      {markerId === editingMarkerId ? (
+                        <input
+                          type='text'
+                          autoFocus
+                          value={markers[markerId].name}
+                          onChange={(event) =>
+                            handleNameChange(event, markerId)
+                          }
+                          onBlur={() => setEditingMarkerId('')}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '-1.5em',
+                            width: '100%',
+                            textAlign: 'center',
+                            fontWeight: 'bold',
+                            color: 'white',
+                            textShadow: '1px 1px 2px black',
+                          }}
+                        >
+                          {marker.name}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
+            </div>
+            <div className='flex items-center justify-center'>
+              <button
+                onClick={addStartMarking}
+                className='mt-4 ml-4 bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded'
+              >
+                Add a new marker
+              </button>
             </div>
           </div>
           <div className='sm:col-span-2 bg-slate-100 p-4'></div>
