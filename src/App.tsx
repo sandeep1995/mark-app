@@ -254,13 +254,13 @@ function App() {
                           } rgb(${marker.color.r}, ${marker.color.g}, ${
                             marker.color.b
                           })`,
-                          backgroundColor: `rgba(${marker.color.r}, ${marker.color.g}, ${marker.color.b}, 0.35)`,
+                          backgroundColor: `rgba(${marker.color.r}, ${marker.color.g}, ${marker.color.b}, 0.1)`,
                           zIndex: markerId === editingMarkerId ? 100 : 'auto',
                         }}
                       >
                         {markerId === editingMarkerId ? (
                           <input
-                            className='bg-transparent text-sm border-none text-white w-full text-center outline-none px-1 py-0.5'
+                            className='bg-transparent text-sm border-none text-white w-full text-center outline-none px-1 py-0.5 opacity-100'
                             type='text'
                             autoFocus
                             value={markers[markerId].name}
