@@ -1,4 +1,4 @@
-import { MouseEvent, useState, useRef } from 'react';
+import { MouseEvent, useState, useRef, useLayoutEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Color {
@@ -22,7 +22,8 @@ interface MarkersMap {
 }
 
 function getRandomRgb() {
-  const num = Math.round(0xffffff * Math.random());
+  const random = Math.random() * (1 - 0.6) + 0.6;
+  const num = Math.round(0xffffff * random);
   const r = num >> 16;
   const g = (num >> 8) & 255;
   const b = num & 255;
@@ -47,7 +48,40 @@ function App() {
     b: 0,
   });
 
-  const markerRef = useRef(null);
+  const markerRef = useRef(0);
+
+  const reset = () => {
+    cancelAnimationFrame(markerRef.current);
+    markerRef.current = 0;
+    setDrawingMarkerId('');
+    setStartX(0);
+    setStartY(0);
+    setColor({
+      r: 0,
+      g: 0,
+      b: 0,
+    });
+    setIsDrawing(false);
+  };
+
+  useLayoutEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        reset();
+      }
+
+      // press R to add a new marker
+      if (event.key === 'r' && !isDrawing && !editingMarkerId) {
+        addStartMarking();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDrawing, editingMarkerId]);
 
   const addStartMarking = () => {
     setIsDrawing(true);
@@ -114,18 +148,7 @@ function App() {
         ...prevMarkers,
         [newMarker.id]: newMarker,
       }));
-
-      cancelAnimationFrame(markerRef.current);
-      markerRef.current = null;
-      setDrawingMarkerId('');
-      setStartX(0);
-      setStartY(0);
-      setColor({
-        r: 0,
-        g: 0,
-        b: 0,
-      });
-      setIsDrawing(false);
+      reset();
     }
   };
 
@@ -160,12 +183,9 @@ function App() {
           <div className='sm:col-span-4 bg-white'>
             <div className='flex items-center justify-center'>
               <div
-                className={`mt-4 z-50 ${isDrawing ? 'cursor-crosshair' : ''}`}
+                className={`z-50 p-2 ${isDrawing ? 'cursor-crosshair' : ''}`}
                 style={{
                   position: 'relative',
-                  width: '800px',
-                  height: '600px',
-                  border: '1px solid black',
                 }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
@@ -173,7 +193,7 @@ function App() {
               >
                 <img
                   className='object-contain w-full -z-10 h-full pointer-events-none'
-                  src='https://picsum.photos/800/600'
+                  src='/road.jpg'
                   style={{ width: '100%', height: '100%' }}
                 />
                 {Object.keys(markers).map((markerId) => {
@@ -241,10 +261,11 @@ function App() {
             </div>
             <div className='flex items-center justify-center'>
               <button
+                disabled={isDrawing || editingMarkerId !== ''}
                 onClick={addStartMarking}
-                className='mt-4 ml-4 bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded'
+                className='bg-purple-800 hover:bg-purple-700 text-white py-2 px-4 rounded-sm disabled:bg-purple-600 disabled:cursor-not-allowed'
               >
-                Add a new marker
+                Add Marker (Press R)
               </button>
             </div>
           </div>
