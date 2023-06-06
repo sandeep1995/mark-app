@@ -1,6 +1,6 @@
 import { MouseEvent, useState, useRef, useLayoutEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { BiCrop, BiTrash } from 'react-icons/bi';
+import { BiCrop, BiDownload, BiEdit, BiTrash, BiUpload } from 'react-icons/bi';
 
 interface Color {
   r: number;
@@ -225,7 +225,11 @@ function App() {
                         top: marker.startY,
                         width: marker.width,
                         height: marker.height,
-                        border: `2px solid rgb(${marker.color.r}, ${marker.color.g}, ${marker.color.b})`,
+                        border: `2px ${
+                          markerId === editingMarkerId ? 'dashed' : 'solid'
+                        } rgb(${marker.color.r}, ${marker.color.g}, ${
+                          marker.color.b
+                        })`,
                         backgroundColor: `rgba(${marker.color.r}, ${marker.color.g}, ${marker.color.b}, 0.35)`,
                         zIndex: markerId === editingMarkerId ? 100 : 'auto',
                       }}
@@ -278,18 +282,130 @@ function App() {
                 })}
               </div>
             </div>
-            <div className='flex items-center justify-center'>
+            <div className='flex items-center justify-center gap-2'>
               <button
                 disabled={isDrawing || editingMarkerId !== ''}
                 onClick={startMarking}
-                className='bg-purple-800 hover:bg-purple-700 text-white py-2 px-4 rounded-sm disabled:bg-purple-600 disabled:cursor-not-allowed flex flex-row items-center justify-center'
+                className='bg-purple-800 hover:bg-purple-700 text-white py-2 px-4 rounded-sm disabled:bg-purple-500 disabled:cursor-not-allowed flex flex-row items-center justify-center'
               >
                 <BiCrop className='text-white w-4 h-4' />
                 <span className='ml-2'>Add a mark ( Press R)</span>
               </button>
+
+              <button
+                className='bg-purple-800 hover:bg-purple-700 text-white py-2 px-4 rounded-sm disabled:bg-purple-500 disabled:cursor-not-allowed flex flex-row items-center justify-center'
+                onClick={() => {
+                  const fileInput = document.createElement('input');
+                  fileInput.setAttribute('type', 'file');
+                  fileInput.setAttribute('accept', '.json');
+                  fileInput.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const markers = JSON.parse(event.target.result);
+                      setMarkers(markers);
+                    };
+                    reader.readAsText(file);
+                  });
+                  fileInput.click();
+                }}
+              >
+                <BiUpload className='text-white w-4 h-4' />
+                <span className='ml-2'>Upload Markers JSON</span>
+              </button>
             </div>
           </div>
-          <div className='sm:col-span-2 bg-slate-100 p-4'></div>
+          <div className='sm:col-span-2 bg-slate-100 p-4'>
+            <div className='flex flex-col'>
+              <div className='flex flex-row items-center justify-between'>
+                <h2 className='text-xl font-semibold text-slate-950'>
+                  Markers
+                </h2>
+                <div className='flex flex-row items-center gap-2'>
+                  <button
+                    disabled={Object.keys(markers).length === 0}
+                    className='bg-purple-800 hover:bg-purple-700 text-white py-2 px-4 rounded-sm disabled:bg-purple-500 disabled:cursor-not-allowed flex flex-row items-center justify-center'
+                    onClick={() => {
+                      setMarkers({});
+                    }}
+                  >
+                    <BiTrash className='text-white w-4 h-4' />
+                    <span className='ml-2'>Clear all</span>
+                  </button>
+
+                  <button
+                    disabled={Object.keys(markers).length === 0}
+                    className='bg-purple-800 hover:bg-purple-700 text-white py-2 px-4 rounded-sm disabled:bg-purple-500 disabled:cursor-not-allowed flex flex-row items-center justify-center'
+                    onClick={() => {
+                      const dataStr =
+                        'data:text/json;charset=utf-8,' +
+                        encodeURIComponent(JSON.stringify(markers));
+                      const downloadAnchorNode = document.createElement('a');
+                      downloadAnchorNode.setAttribute('href', dataStr);
+                      downloadAnchorNode.setAttribute(
+                        'download',
+                        'markers.json'
+                      );
+                      document.body.appendChild(downloadAnchorNode);
+                      downloadAnchorNode.click();
+                      downloadAnchorNode.remove();
+                    }}
+                  >
+                    <BiDownload className='text-white w-4 h-4' />
+                    <span className='ml-2'>Export</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className='border-t border-slate-400 mt-2' />
+
+              <div className='my-4 flex flex-col justify-center space-y-3'>
+                {Object.keys(markers).map((markerId) => {
+                  const marker = markers[markerId];
+                  return (
+                    <div
+                      key={`text-${markerId}`}
+                      className='flex flex-row items-center gap-2 justify-between'
+                    >
+                      <div className='flex flex-row items-center'>
+                        <div
+                          className='w-6 h-6 rounded mr-2'
+                          style={{
+                            backgroundColor: `rgb(${marker.color.r}, ${marker.color.g}, ${marker.color.b})`,
+                          }}
+                        ></div>
+                        <span className='text-base font-medium'>
+                          {marker.name}
+                        </span>
+                      </div>
+                      <div className='flex flex-row items-center gap-2'>
+                        <button
+                          className='text-white text-sm font-semibold'
+                          onClick={() => {
+                            setEditingMarkerId(markerId);
+                          }}
+                        >
+                          <BiEdit className='text-gray-800 h-4 w-4' />
+                        </button>
+                        <button
+                          className='text-white text-sm font-semibold'
+                          onClick={() => handleDeleteMarker(markerId)}
+                        >
+                          <BiTrash className='text-gray-800 h-4 w-4' />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {Object.keys(markers).length === 0 && (
+                  <p className='text-center text-sm text-gray-800'>
+                    No markers added
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </>
