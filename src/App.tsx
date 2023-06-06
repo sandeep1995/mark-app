@@ -1,5 +1,6 @@
 import { MouseEvent, useState, useRef, useLayoutEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { BiCrop, BiTrash } from 'react-icons/bi';
 
 interface Color {
   r: number;
@@ -54,6 +55,7 @@ function App() {
     cancelAnimationFrame(markerRef.current);
     markerRef.current = 0;
     setDrawingMarkerId('');
+    setEditingMarkerId('');
     setStartX(0);
     setStartY(0);
     setColor({
@@ -72,7 +74,7 @@ function App() {
 
       // press R to add a new marker
       if (event.key === 'r' && !isDrawing && !editingMarkerId) {
-        addStartMarking();
+        startMarking();
       }
     };
 
@@ -83,7 +85,7 @@ function App() {
     };
   }, [isDrawing, editingMarkerId]);
 
-  const addStartMarking = () => {
+  const startMarking = () => {
     setIsDrawing(true);
   };
 
@@ -167,6 +169,17 @@ function App() {
     }));
   };
 
+  const handleDeleteMarker = (markerId: string) => {
+    setMarkers((prevMarkers) => {
+      const newMarkers = { ...prevMarkers };
+      delete newMarkers[markerId];
+      return newMarkers;
+    });
+    setTimeout(() => {
+      reset();
+    }, 0);
+  };
+
   return (
     <>
       <header className='max-w-full mx-auto'>
@@ -235,7 +248,7 @@ function App() {
                         />
                       ) : marker.name !== '' ? (
                         <div
-                          className='text-sm font-medium px-1 pt-1 break-words'
+                          className='text-sm flex flex-row items-center justify-between font-medium px-1 pt-1 break-words'
                           style={{
                             position: 'absolute',
                             top: '-2px',
@@ -247,11 +260,17 @@ function App() {
                             opacity: 1,
                           }}
                         >
-                          {marker.name}
+                          <span>{marker.name}</span>
+                          <button
+                            className='text-white text-sm font-semibold'
+                            onClick={() => handleDeleteMarker(markerId)}
+                          >
+                            <BiTrash />
+                          </button>
                         </div>
                       ) : (
                         <p className='text-center text-xs text-white'>
-                          Click to add a name
+                          Click to edit
                         </p>
                       )}
                     </div>
@@ -262,10 +281,11 @@ function App() {
             <div className='flex items-center justify-center'>
               <button
                 disabled={isDrawing || editingMarkerId !== ''}
-                onClick={addStartMarking}
-                className='bg-purple-800 hover:bg-purple-700 text-white py-2 px-4 rounded-sm disabled:bg-purple-600 disabled:cursor-not-allowed'
+                onClick={startMarking}
+                className='bg-purple-800 hover:bg-purple-700 text-white py-2 px-4 rounded-sm disabled:bg-purple-600 disabled:cursor-not-allowed flex flex-row items-center justify-center'
               >
-                Add Marker (Press R)
+                <BiCrop className='text-white w-4 h-4' />
+                <span className='ml-2'>Add a mark ( Press R)</span>
               </button>
             </div>
           </div>
