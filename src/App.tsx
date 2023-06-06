@@ -322,21 +322,18 @@ function App() {
                     const fileInput = document.createElement('input');
                     fileInput.setAttribute('type', 'file');
                     fileInput.setAttribute('accept', '.json');
-                    fileInput.addEventListener(
-                      'change',
-                      (evt: React.ChangeEvent<HTMLInputElement>) => {
-                        const file = evt.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            const result = event.target?.result as string;
-                            const markers = JSON.parse(result);
-                            setMarkers(markers);
-                          };
-                          reader.readAsText(file);
-                        }
+                    fileInput.addEventListener('change', (evt: any) => {
+                      const file = evt.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const result = event.target?.result as string;
+                          const markers = JSON.parse(result);
+                          setMarkers(markers);
+                        };
+                        reader.readAsText(file);
                       }
-                    );
+                    });
                     fileInput.click();
                   }}
                 >
