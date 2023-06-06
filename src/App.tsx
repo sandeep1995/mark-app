@@ -9,38 +9,7 @@ import {
   BiUpload,
 } from 'react-icons/bi';
 
-interface Color {
-  r: number;
-  g: number;
-  b: number;
-}
-
-interface Marker {
-  id: string;
-  startX: number;
-  startY: number;
-  width: number;
-  height: number;
-  color: Color;
-  name?: string;
-}
-
-interface MarkersMap {
-  [key: string]: Marker;
-}
-
-function getRandomRgb() {
-  const random = Math.random() * (1 - 0.6) + 0.6;
-  const num = Math.round(0xffffff * random);
-  const r = num >> 16;
-  const g = (num >> 8) & 255;
-  const b = num & 255;
-  return {
-    r,
-    g,
-    b,
-  };
-}
+import { Color, MarkersMap, Marker, getRandomRgb } from './utils/index';
 
 function App() {
   const [imageSrc, setImageSrc] = useState<string>('');
@@ -120,7 +89,7 @@ function App() {
       }
 
       markerRef.current = requestAnimationFrame(() => {
-        const newMarker = {
+        const newMarker: Marker = {
           id: markerId,
           startX: width >= 0 ? startX : offsetX,
           startY: height >= 0 ? startY : offsetY,
@@ -144,7 +113,7 @@ function App() {
       const width = offsetX - startX;
       const height = offsetY - startY;
 
-      const newMarker = {
+      const newMarker: Marker = {
         name: '',
         id: markerId,
         startX: width >= 0 ? startX : offsetX,
@@ -260,7 +229,7 @@ function App() {
                   onMouseUp={handleMouseUp}
                 >
                   <img
-                    className='object-contain w-full -z-10 h-full pointer-events-none'
+                    className='object-contain w-full -z-10 h-full max-h-[80vh] pointer-events-none'
                     src={imageSrc || '/road.jpg'}
                     style={{ width: '100%', height: '100%' }}
                   />
@@ -353,15 +322,21 @@ function App() {
                     const fileInput = document.createElement('input');
                     fileInput.setAttribute('type', 'file');
                     fileInput.setAttribute('accept', '.json');
-                    fileInput.addEventListener('change', (event) => {
-                      const file = event.target.files[0];
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        const markers = JSON.parse(event.target.result);
-                        setMarkers(markers);
-                      };
-                      reader.readAsText(file);
-                    });
+                    fileInput.addEventListener(
+                      'change',
+                      (evt: React.ChangeEvent<HTMLInputElement>) => {
+                        const file = evt.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            const result = event.target?.result as string;
+                            const markers = JSON.parse(result);
+                            setMarkers(markers);
+                          };
+                          reader.readAsText(file);
+                        }
+                      }
+                    );
                     fileInput.click();
                   }}
                 >
